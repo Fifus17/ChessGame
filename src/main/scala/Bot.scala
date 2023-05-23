@@ -26,43 +26,47 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     (7 - x, 7 - y)
   }
 
-  private def test_move(x: Int,y: Int,piece:Piece, current_depth:Int, promotion: Char)={
+  private def test_move(x: Int, y: Int, piece: Piece, promotion: Char): Double={
     val old_pos = piece.pos
     val captured = board.grid(x)(y)
     val was_promoted = board.move(piece, (x, y),promotion)
-    val move_result = evaluate(piece.color, current_depth)
-    board.revert_move(piece, captured, old_pos,was_promoted)
+    val move_result = evaluate(piece.color)
+    board.revert_move(piece, captured, old_pos,was_promoted,!piece.has_moved)
     move_result
   }
-  def pieceValueOf(a: Piece): Float = {a.value}
+  def pieceValueOf(a: Piece): Double = {a.value}
 
   def positionalValueOf(a: Piece): Float = {
     val position:(Int,Int) = matrix_position(a.pos,a.color)
     matrix(pieces_dict(a.name))(position._1)(position._2)
   }
-  private def evaluate(color: Int, current_depth: Int): Float = {
-    if(board.get_attacking(board.kings(color).pos, 1 - color).nonEmpty)
-      return -current_depth * 10_000
+  private def evaluate(color: Int): Double = {
+    if(board.get_attacking(board.kings(color).pos,1-color).nonEmpty)
+      return -5_000
+    if(board.is_checkmate(color))
+      return -50_000
     var side_0 = board.active(color).toList.map(pieceValueOf).sum
     var side_1 = board.active(1-color).toList.map(pieceValueOf).sum
     side_0 += board.active(color).toList.map(positionalValueOf).sum
     side_1 += board.active(1-color).toList.map(positionalValueOf).sum
     side_0 - side_1
   }
-  private def add_move(best_queue: mutable.PriorityQueue[Move], color: Int, piece: Piece): Unit = {
+  private def add_move(best_queue: mutable.PriorityQueue[Move], piece: Piece): Unit = {
     val possible = board.get_available(piece)
+    if(board.is_check(piece.color)) {
+    }
     var i =0
     for(position <- possible){
       i+=1
       val x = position._1
       val y = position._2
-      if(piece.canPromote()) {
+      if(piece.canPromote) {
         for (promotion <- List('H', 'Q', 'R', 'B')) {
-          val value = test_move(x, y, piece, 1, promotion)
+          val value = test_move(x, y, piece, promotion)
           best_queue.enqueue(new Move(x, y, piece, value, promotion))
         }
       }
-      val value = test_move(x, y, piece, 1, 'P')
+      val value = test_move(x, y, piece, 'P')
       best_queue.enqueue(new Move(x, y, piece, value, 'P'))
     }
   }
@@ -74,7 +78,7 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     val best : mutable.PriorityQueue[Move] = new mutable.PriorityQueue[Move]()(Ordering.by(moveOrder))
     val result = new ArrayBuffer[Move]
     for(piece <- board.active(color)) {
-      add_move(best, color, piece)
+      add_move(best, piece)
     }
     var i = 0
     while(i < width && best.nonEmpty) {
@@ -106,7 +110,7 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
         val captured = board.grid(x)(y)
         val wasPromoted = board.move(piece, (x, y),move.promotion)
         val opposite_move = best_move(1 - color, current_depth - 1)
-        board.revert_move(piece, captured, old_pos, wasPromoted)
+        board.revert_move(piece, captured, old_pos, wasPromoted,!piece.has_moved)
         if(opposite_move.isDefined && opposite_move.get.value< OpponentMoveVal) {
           moveNo1 = Some(new Move(x,y,piece,-opposite_move.get.value, move.promotion))
           OpponentMoveVal = opposite_move.get.value
@@ -115,19 +119,22 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
       moveNo1
     }
   }
-  def play_against_bot(): Int ={
+  def play_against_bot(bot:Bot): Int ={
           /*function for testing bot
           A bot vs bot game: returns COLOR of winner
           :param bot: another bot to play with*/
     var i = 0
+    val bots: List[Bot] = List(this, bot)
     while(i < 200) {
       val color = board.turn_color
       if(board.is_checkmate(color)) {
         println("mat")
         return 1 -color
       }
-      val move = best_move(color, depth)
+      val move = bots(i%2).best_move(color, depth)
       if(move.isEmpty) {
+        if(board.is_check(color))
+          println("mat")
         println("pat")
         return 2
       }
@@ -136,10 +143,9 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
       board.end_turn()
       Thread.sleep(500)
       board.show()
-      //print(evaluate(1, 1))
       i += 1
     }
-    val result = evaluate(1, 1)
+    val result = evaluate(1)
     if(result > 0)
       return 1
     0
@@ -150,6 +156,7 @@ object Cppl {
     val b = new Board(8,true,600,true)
     b.show()
     val bot1 = new Bot(b,3,3)
-    bot1.play_against_bot()
+    val bot2 = new Bot(b,3,3)
+    bot1.play_against_bot(bot2)
   }
 }

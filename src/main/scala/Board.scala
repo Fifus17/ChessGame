@@ -1,6 +1,6 @@
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.math.{abs, signum}
+import scala.math.abs
 class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boolean) {
   var grid: Array[Array[Option[Piece]]] = Array.ofDim[Option[Piece]](8, 8)
   for (i <- 0 until 8; j <- 0 until 8) {
@@ -80,10 +80,14 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     val row_diff = pos2._1 - pos1._1
     val col_diff = pos2._2 - pos1._2
     val path = ArrayBuffer.empty[(Int, Int)]
+    var row_step = -1
+    var col_step = -1
+    if(row_diff > 0)
+      row_step = 1
+    if(col_diff > 0)
+      col_step = 1
     if (abs(row_diff) == abs(col_diff)) {
       //Path is diagonal
-      val row_step = signum(row_diff)
-      val col_step = signum(col_diff)
       for (i: Int <- 1 to abs(row_diff)) {
         path.addOne((pos1._1 + i * row_step, pos1._2 + i * col_step))
       }
@@ -91,7 +95,6 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     }
     if (row_diff == 0) {
       //Path is horizontal
-      val col_step = signum(col_diff)
       for (i: Int <- 1 to abs(col_diff)) {
         path.addOne((pos1._1, pos1._2 + i * col_step))
       }
@@ -99,7 +102,6 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     }
     if (col_diff == 0) {
       //Path is vertical
-      val row_step = signum(row_diff)
       for (i: Int <- 1 to abs(row_diff)) {
         path.addOne((pos1._1 + i * row_step, pos1._2))
       }
@@ -135,55 +137,39 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         */
     var row: Int = 0
     var col: Int = 0
+    var side = 1
+    if (piece.color == 0)
+      side = -1
     if (piece.color != turn_color && !is_bot)
       ArrayBuffer[(Int, Int)]()
     else {
       val inbounds = (row: Int, col: Int) => 0 <= row && row < size && 0 <= col && col < size
       val available_pos = ArrayBuffer[(Int, Int)]()
-      for (move <- piece.moves) {
-        if (piece.color == 1) {
-          row = piece.row + move._1
-          col = piece.col + move._2
+      val moves = piece.moves.to(ArrayBuffer)
+      if (piece.name == 'P') {
+        val piece_moves = List((1, 1), (1, -1))
+        for (move <- piece_moves) {
+          row = piece.row + move._1 * side
+          col = piece.col + move._2 * side
+          if (inbounds(row, col) && grid(row)(col).isDefined && grid(row)(col).get.color != piece.color)
+            available_pos.addOne((row, col))
         }
-        else {
-          row = piece.row - move._1
-          col = piece.col - move._2
-        }
-        if (inbounds(row, col) && !is_blocked((row, col), piece) && (grid(row)(col).isEmpty || grid(row)(col).get.color != piece.color)) {
+        row = piece.row + side
+        col = piece.col
+        if (inbounds(row, col) && grid(row)(col).isEmpty)
           available_pos.addOne((row, col))
-          if(grid(row)(col)!=None){
-          }
-        }
       }
-      if (is_check(piece.color)) {
-        val available_pos_new = ArrayBuffer[(Int, Int)]()
-        val king = kings(piece.color)
-        val attackers = get_attacking(king.pos, 1 - king.color)
-        if (piece == king) {
-          for (pos <- available_pos) {
-            if (get_attacking(pos, 1 - piece.color).isEmpty)
-              available_pos_new.addOne(pos)
-          }
-          return available_pos_new
-        }
-        else if (attackers.size > 1) {
-          return ArrayBuffer[(Int, Int)]()
-        }
-        else {
-          val attacker = attackers(0)
-          for (pos <- available_pos) {
-            val path = get_path((attacker.row, attacker.col), (king.row, king.col))
-            if (pos == (attacker.row, attacker.col) || path.contains(pos)) {
-              available_pos_new.addOne(pos)
-            }
-          }
-          return available_pos_new
+      else {
+        for (move <- moves) {
+          row = piece.row + move._1 * side
+          col = piece.col + move._2 * side
+          if (inbounds(row, col) && !is_blocked((row, col), piece) && (grid(row)(col).isEmpty || grid(row)(col).get.color != piece.color))
+            available_pos.addOne((row, col))
         }
       }
       available_pos
     }
   }
-
   def get_attacking(pos: (Int, Int), attacking_color: Int): ArrayBuffer[Piece] = {
     /*
     Returns set of all `attacking_color` pieces which attack square at pos `position`
@@ -193,7 +179,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
       var row = 0
       var col = 0
       val positions: mutable.HashSet[(Int, Int)] = new mutable.HashSet[(Int, Int)]()
-      for (move <- attack_piece.moves) {
+      for (move <- attack_piece.attack_moves) {
         if (attack_piece.color == 1) {
           row = attack_piece.row + move._1
           col = attack_piece.col + move._2
@@ -202,7 +188,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
           row = attack_piece.row - move._1
           col = attack_piece.col - move._2
         }
-        if (row != attack_piece.row || col != attack_piece.col) {
+        if ((row,col)!=attack_piece.pos) {
           positions += ((row, col))
         }
       }
@@ -223,10 +209,11 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     grid(piece.row)(piece.col) = None
     grid(new_position._1)(new_position._2) = Some(piece)
     piece.place(new_position)
+    piece.has_moved = true
     List('Q','N','R','B').contains(promotion)
   }
 
-  def revert_move(piece: Piece, captured: Option[Piece], old_position: (Int, Int),was_promoted:Boolean): Unit = {
+  def revert_move(piece: Piece, captured: Option[Piece], old_position: (Int, Int),was_promoted:Boolean,first_move:Boolean): Unit = {
     if(was_promoted)
       piece.degrade()
     if (captured.isDefined) {
@@ -239,6 +226,8 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     grid(piece.row)(piece.col) = captured
     grid(old_position._1)(old_position._2) = Some(piece)
     piece.place(old_position)
+    if(piece.name == 'P'&&first_move)
+      piece.has_moved=false
   }
 
   def capture(captured_piece: Piece): Boolean = {
@@ -257,6 +246,8 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
 
     val king = kings(color)
     val attackers = get_attacking((king.row, king.col), 1 - king.color)
+    if(!active(color).contains(kings(color)))
+      return true
 
     //Check if the king is attacked
     if (attackers.isEmpty)
@@ -264,7 +255,34 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
 
     //Check if the king can escape or capture the attacking piece
     for (pos <- get_available(king)) {
-      if (get_attacking(pos, 1 - king.color).isEmpty)
+      val attack_pieces = new ArrayBuffer[Piece]()
+      for(attack_piece <- active(1 -color)){
+        val positions = new mutable.HashSet[(Int,Int)]()
+        var row =0
+        var col =0
+        for(move <- attack_piece.moves){
+          if(attack_piece.color == 1) {
+            row = attack_piece.row + move._1
+            col = attack_piece.col + move._2
+          }
+          else {
+            row = attack_piece.row - move._1
+            col = attack_piece.col - move._2
+          }
+          if((row,col) != attack_piece.pos)
+            positions.addOne((row,col))
+        }
+        var king_is_blocked = false
+        val path = get_path(attack_piece.pos, pos)
+
+        for ((r, c) <- path) {
+          if(grid(r)(c).isDefined && grid(r)(c).get !=king)
+            king_is_blocked = true
+        }
+        if(positions.contains(pos)  &&  !king_is_blocked)
+          attack_pieces.append(attack_piece)
+      }
+      if(attack_pieces.isEmpty)
         return false
     }
     //Check if any piece can block the attack
@@ -274,14 +292,12 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
       var r = 0
       var c = 0
       path.addAll(get_path((king.row, king.col), (attacker.row, attacker.col)))
-      print(path)
       for (defender <- active(king.color)) {
         for (move <- get_available(defender)) {
             r = move._1
             c = move._2
-          if (path.contains(Tuple2(r, c))) {
+          if (path.contains(Tuple2(r, c)))
             return false
-          }
         }
       }
     }
