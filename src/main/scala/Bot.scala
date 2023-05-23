@@ -26,12 +26,12 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     (7 - x, 7 - y)
   }
 
-  private def test_move(x: Int, y: Int, piece: Piece, promotion: Char): Double={
+  private def test_move(x: Int, y: Int, piece: Piece, promotion: Char,first_move: Boolean): Double={
     val old_pos = piece.pos
     val captured = board.grid(x)(y)
     val was_promoted = board.move(piece, (x, y),promotion)
     val move_result = evaluate(piece.color)
-    board.revert_move(piece, captured, old_pos,was_promoted,!piece.has_moved)
+    board.revert_move(piece, captured, old_pos,was_promoted,first_move)
     move_result
   }
   def pieceValueOf(a: Piece): Double = {a.value}
@@ -62,11 +62,11 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
       val y = position._2
       if(piece.canPromote) {
         for (promotion <- List('H', 'Q', 'R', 'B')) {
-          val value = test_move(x, y, piece, promotion)
+          val value = test_move(x, y, piece, promotion,!piece.has_moved)
           best_queue.enqueue(new Move(x, y, piece, value, promotion))
         }
       }
-      val value = test_move(x, y, piece, 'P')
+      val value = test_move(x, y, piece, 'P',!piece.has_moved)
       best_queue.enqueue(new Move(x, y, piece, value, 'P'))
     }
   }

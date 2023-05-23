@@ -158,6 +158,9 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         col = piece.col
         if (inbounds(row, col) && grid(row)(col).isEmpty)
           available_pos.addOne((row, col))
+        val further_row = row + side//2 ruchy do przodu na starcie
+        if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved)
+          available_pos.addOne((further_row, col))
       }
       else {
         for (move <- moves) {
