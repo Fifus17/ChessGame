@@ -34,17 +34,20 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     val kingsBuffer = new ArrayBuffer[King]()
     for (row: Int <- List(0, size - 1)) {
       var color = 0
-      if (row == 0)
+      var colorName = "black"
+      if (row == 0) {
         color = 1
+        colorName = "white"
+      }
 
-      val rook_l: Rook = new Rook(row, 0, color)
-      val knight_l: Knight = new Knight(row, 1, color)
-      val bishop_l: Bishop = new Bishop(row, 2, color)
-      val queen: Queen = new Queen(row, 3, color)
-      val king: King = new King(row, 4, color)
-      val bishop_r: Bishop = new Bishop(row, 5, color)
-      val knight_r: Knight = new Knight(row, 6, color)
-      val rook_r: Rook = new Rook(row, 7, color)
+      val rook_l: Rook = new Rook(row, 0, color, colorName)
+      val knight_l: Knight = new Knight(row, 1, color, colorName)
+      val bishop_l: Bishop = new Bishop(row, 2, color, colorName)
+      val queen: Queen = new Queen(row, 3, color, colorName)
+      val king: King = new King(row, 4, color, colorName)
+      val bishop_r: Bishop = new Bishop(row, 5, color, colorName)
+      val knight_r: Knight = new Knight(row, 6, color, colorName)
+      val rook_r: Rook = new Rook(row, 7, color, colorName)
 
       grid(row)(0) = Some(rook_l)
       grid(row)(1) = Some(knight_l)
@@ -60,10 +63,13 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     }
     for (row <- List(1, size - 2)) {
       var color = 0
-      if (row == 1)
+      var colorName = "black"
+      if (row == 1) {
         color = 1
+        colorName = "white"
+      }
       for (col: Int <- 0 until size) {
-        val pawn: Pawn = new Pawn(row, col, color)
+        val pawn: Pawn = new Pawn(row, col, color, colorName)
         grid(row)(col) = Some(pawn)
         active(color).addOne(pawn)
       }

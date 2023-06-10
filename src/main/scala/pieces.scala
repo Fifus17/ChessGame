@@ -39,6 +39,7 @@ trait Piece {
   var name: Char
   var moves: List[(Int, Int)]
   var has_moved: Boolean = false
+  val colorName: String
   def place(pos:(Int,Int)): Unit ={
     row = pos._1
     col = pos._2
@@ -50,7 +51,7 @@ trait Piece {
   }
   def pos: (Int, Int) = (row, col)
   def canPromote: Boolean ={
-    if(name=='P'&&(color == 1 && row ==7 ||color ==0 && row==0)){
+    if(name=='P'&&(color == 1 && row ==7 || color ==0 && row==0)){
       return true
     }
     false
@@ -58,10 +59,11 @@ trait Piece {
   def promote(new_name:Char): Unit ={}
   def degrade(): Unit ={}
 }
-class Pawn(var row:Int, var col: Int, val color:Int) extends Piece{
+class Pawn(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 1.0
   var name ='P'
   var moves: List[(Int, Int)] = PieceVariables.pawnMoves
+//  override val graphic: String = {match(color)} todo
   override def promote(new_name:Char): Unit ={
     new_name match{
       case 'Q' =>
@@ -88,40 +90,41 @@ class Pawn(var row:Int, var col: Int, val color:Int) extends Piece{
     name ='P'
     moves = PieceVariables.pawnMoves
   }
+
 }
-class King(var row:Int, var col: Int, val color:Int) extends Piece{
+class King(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 50_000
   var name ='K'
   var moves: List[(Int, Int)] = PieceVariables.kingMoves
 }
-class Rook(var row:Int, var col: Int, val color:Int) extends Piece{
+class Rook(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 5.25
   var name ='R'
   var moves: List[(Int, Int)] = PieceVariables.rookMoves
 }
-class Bishop(var row:Int, var col: Int, val color:Int) extends Piece{
+class Bishop(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 3.5
   var name ='B'
   var moves: List[(Int, Int)] = PieceVariables.bishopMoves
 }
-class Knight(var row:Int, var col: Int, val color:Int) extends Piece{
+class Knight(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 3.5
   var name ='N'
   var moves: List[(Int, Int)] = PieceVariables.knightMoves
 }
-class Queen(var row:Int, var col: Int, val color:Int) extends Piece{
+class Queen(var row:Int, var col: Int, val color:Int, val colorName:String) extends Piece{
   var value = 10.0
   var name ='Q'
   var moves: List[(Int, Int)] = PieceVariables.queenMoves
 }
 object Bppl {
   def main(args: Array[String]): Unit = {
-    val p:Pawn = new Pawn(3,3,0)
-    val r:Rook = new Rook(3,3,0)
-    val b:Bishop = new Bishop(3,3,0)
-    val n:Knight = new Knight(3,3,0)
-    val k:King = new King(3,3,0)
-    val q:Queen = new Queen(3,3,0)
+    val p:Pawn = new Pawn(3,3,0, "white")
+    val r:Rook = new Rook(3,3,0, "white")
+    val b:Bishop = new Bishop(3,3,0, "white")
+    val n:Knight = new Knight(3,3,0, "white")
+    val k:King = new King(3,3,0, "white")
+    val q:Queen = new Queen(3,3,0, "white")
     val board = new Board(8,true,600,true)
     board.setup()
     println(board.get_available(p))

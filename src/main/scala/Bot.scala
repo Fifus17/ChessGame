@@ -151,12 +151,13 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     0
   }
 }
-object Cppl {
-  def main(args: Array[String]): Unit = {
-    val b = new Board(8,true,600,true)
-    b.show()
-    val bot1 = new Bot(b,3,3)
-    val bot2 = new Bot(b,3,3)
-    bot1.play_against_bot(bot2)
-  }
-}
+//object Cppl {
+//  def main(args: Array[String]): Unit = {
+//    val b = new Board(8,true,600,true)
+//    b.show()
+//    val bot1 = new Bot(b,3,3)
+//    val bot2 = new Bot(b,3,3)
+//    bot1.play_against_bot(bot2)
+////    val board = document.createElement("board").asInstanceOf[html.Div]
+//  }
+//}
