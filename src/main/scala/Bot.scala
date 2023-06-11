@@ -1,7 +1,11 @@
 import play.api.libs.json.Json
+import scalafx.application.Platform
+import scalafx.scene.Scene
+import scalafx.stage.Stage
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{ExecutionContext, Future}
 class Bot(val board: Board, val depth: Int, val width: Int) {
   val matrix: List[List[List[Float]]] = read_matrix()
   val pieces_dict: Map[Char, Int] = Map(
@@ -12,6 +16,9 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     'R' -> 4,
     'K' -> 5
   )
+
+  implicit val ec = ExecutionContext.global
+
   def read_matrix(): List[List[List[Float]]] ={
     val jsonString = os.read(os.pwd / "src" / "main" / "scala" / "values.json")
     val jsonValue = Json.parse(jsonString)
@@ -119,31 +126,31 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
       moveNo1
     }
   }
-  def play_against_bot(bot:Bot): Int ={
+  def play_against_bot(bot:Bot): Int = {
           /*function for testing bot
           A bot vs bot game: returns COLOR of winner
           :param bot: another bot to play with*/
     var i = 0
     val bots: List[Bot] = List(this, bot)
     while(i < 200) {
-      val color = board.turn_color
-      if(board.is_checkmate(color)) {
-        println("mat")
-        return 1 -color
-      }
-      val move = bots(i%2).best_move(color, depth)
-      if(move.isEmpty) {
-        if(board.is_check(color))
+        val color = board.turn_color
+        if (board.is_checkmate(color)) {
           println("mat")
-        println("pat")
-        return 2
-      }
-      val m = move.get
-      board.move(m.piece, (m.x, m.y),m.promotion)
-      board.end_turn()
-      Thread.sleep(500)
-      board.show()
-      i += 1
+          return 1 - color
+        }
+        val move = bots(i % 2).best_move(color, depth)
+        if (move.isEmpty) {
+          if (board.is_check(color))
+            println("mat")
+          println("pat")
+          return 2
+        }
+        val m = move.get
+        board.move(m.piece, (m.x, m.y), m.promotion)
+        board.end_turn()
+        Thread.sleep(500)
+        board.show()
+        i += 1
     }
     val result = evaluate(1)
     if(result > 0)

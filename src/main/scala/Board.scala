@@ -1,8 +1,21 @@
+import scalafx.application.Platform
+import scalafx.scene.Scene
+import scalafx.scene.layout.GridPane
+import scalafx.scene.paint.Color.LightGray
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.Future
 import scala.math.abs
 class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boolean) {
   var grid: Array[Array[Option[Piece]]] = Array.ofDim[Option[Piece]](8, 8)
+  var UI: BoardUI = new BoardUI(this)
+  var boardScene = new Scene
+  var chosenX = -1
+  var chosenY = -1
+  var highlightedTiles: ArrayBuffer[Tuple2[Int, Int]] = ArrayBuffer.empty
+  var pieceHighlighted = false
+
   for (i <- 0 until 8; j <- 0 until 8) {
     grid(i)(j) = None
   }
@@ -73,6 +86,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         grid(row)(col) = Some(pawn)
         active(color).addOne(pawn)
       }
+    }
+    boardScene = new Scene {
+      fill = LightGray
+      content = UI.drawBoard()
     }
     List(kingsBuffer(1),kingsBuffer(0))
   }
@@ -320,6 +337,32 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         return false
     }
     true
+  }
+
+  def highlightTile(x: Int, y: Int): Unit = {
+    if (pieceHighlighted && highlightedTiles.contains((x, y))) {
+      move(grid(chosenX)(chosenY).get, (x, y), 0)
+      chosenX = -1
+      chosenY = -1
+      pieceHighlighted = false
+      highlightedTiles = ArrayBuffer.empty
+    }
+    else {
+      grid(x)(y) match {
+        case Some(piece) =>
+          highlightedTiles = get_available(piece)
+          pieceHighlighted = true
+          chosenX = x
+          chosenY = y
+
+        case None =>
+          highlightedTiles = ArrayBuffer.empty
+          pieceHighlighted = false
+          chosenX = -1
+          chosenY = -1
+      }
+    }
+
   }
 
   def show(): Unit ={

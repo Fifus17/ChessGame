@@ -2,21 +2,40 @@ import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
 import scalafx.scene.paint.Color._
+import scalafx.application.Platform
+import scalafx.scene.control.Label
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.StdIn.{readInt, readLine}
 
 object App extends JFXApp {
 
+    implicit val ec = ExecutionContext.global
+
+
     val b = new Board(8, true, 600, true)
-    val boardUI = new BoardUI(b)
     stage = new PrimaryStage {
         title = "Chess Board"
-        scene = new Scene {
-        fill = LightGray
-        content = boardUI.drawBoard()
+        scene = b.boardScene
+    }
+
+    // Test demo
+    Future {
+        // Simulate long running computation
+        while (true) {
+//            Thread.sleep(3000)
+            val x = readInt()
+            val y = readInt()
+            val xTo = readInt()
+            val yTo = readInt()
+            b.move(b.grid(x)(y).get, (xTo, yTo), 0)
+
+            // Update GUI
+            Platform.runLater {
+                b.boardScene.content = b.UI.drawBoard()
+            }
+            println("-----------------")
         }
     }
-    b.show()
-//    val bot1 = new Bot(b, 3, 3)
-//    val bot2 = new Bot(b, 3, 3)
-//    bot1.play_against_bot(bot2)
 
 }
