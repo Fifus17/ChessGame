@@ -25,16 +25,12 @@ object App extends JFXApp {
         while (true) {
 //            Thread.sleep(3000)
             val x = readInt()
-            val y = readInt()
-            val xTo = readInt()
-            val yTo = readInt()
-            b.move(b.grid(x)(y).get, (xTo, yTo), 0)
+//            b.move(b.grid(x)(y).get, (xTo, yTo), 0)
 
             // Update GUI
             Platform.runLater {
                 b.boardScene.content = b.UI.drawBoard()
             }
-            println("-----------------")
         }
     }
 

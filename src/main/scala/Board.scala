@@ -10,7 +10,7 @@ import scala.math.abs
 class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boolean) {
   var grid: Array[Array[Option[Piece]]] = Array.ofDim[Option[Piece]](8, 8)
   var UI: BoardUI = new BoardUI(this)
-  var boardScene = new Scene
+  var boardScene = new Scene(640, 640)
   var chosenX = -1
   var chosenY = -1
   var highlightedTiles: ArrayBuffer[Tuple2[Int, Int]] = ArrayBuffer.empty
@@ -47,10 +47,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     val kingsBuffer = new ArrayBuffer[King]()
     for (row: Int <- List(0, size - 1)) {
       var color = 0
-      var colorName = "black"
+      var colorName = "white"
       if (row == 0) {
         color = 1
-        colorName = "white"
+        colorName = "black"
       }
 
       val rook_l: Rook = new Rook(row, 0, color, colorName)
@@ -76,10 +76,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
     }
     for (row <- List(1, size - 2)) {
       var color = 0
-      var colorName = "black"
+      var colorName = "white"
       if (row == 1) {
         color = 1
-        colorName = "white"
+        colorName = "black"
       }
       for (col: Int <- 0 until size) {
         val pawn: Pawn = new Pawn(row, col, color, colorName)
@@ -87,10 +87,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         active(color).addOne(pawn)
       }
     }
-    boardScene = new Scene {
-      fill = LightGray
-      content = UI.drawBoard()
-    }
+    boardScene.content = UI.mainMenu()
     List(kingsBuffer(1),kingsBuffer(0))
   }
 
@@ -272,8 +269,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
 
     val king = kings(color)
     val attackers = get_attacking((king.row, king.col), 1 - king.color)
-    if(!active(color).contains(kings(color)))
+    if(!active(color).contains(kings(color))) {
+      println("Check mate!")
       return true
+    }
 
     //Check if the king is attacked
     if (attackers.isEmpty)
@@ -340,20 +339,34 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
   }
 
   def highlightTile(x: Int, y: Int): Unit = {
+
+      // move a piece
     if (pieceHighlighted && highlightedTiles.contains((x, y))) {
       move(grid(chosenX)(chosenY).get, (x, y), 0)
       chosenX = -1
       chosenY = -1
       pieceHighlighted = false
       highlightedTiles = ArrayBuffer.empty
+      if (is_checkmate(turn_color)) {
+        println("checkmate: " + turn_color)
+        boardScene.content = UI.finishView(turn_color)
+      }
+      if (is_checkmate(1 - turn_color)) {
+        val color = 1 - turn_color
+        println("checkmate: " + color)
+        boardScene.content = UI.finishView(1 - turn_color)
+      }
+      end_turn()
     }
     else {
       grid(x)(y) match {
         case Some(piece) =>
-          highlightedTiles = get_available(piece)
-          pieceHighlighted = true
-          chosenX = x
-          chosenY = y
+          if (piece.color == turn_color) {
+            highlightedTiles = get_available(piece)
+            pieceHighlighted = true
+            chosenX = x
+            chosenY = y
+          }
 
         case None =>
           highlightedTiles = ArrayBuffer.empty
