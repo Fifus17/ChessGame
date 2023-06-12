@@ -18,7 +18,7 @@ object App extends JFXApp {
         scene = new Scene()
     }
 
-    val b = new Board(8, true, 600, true, stage)
+    val b = new Board(8, true, 600, false, stage)
 
   // Test demo
     Future {

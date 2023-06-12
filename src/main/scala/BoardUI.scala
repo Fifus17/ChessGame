@@ -147,7 +147,10 @@ class BoardUI(var board: Board) {
         },
         new Button("PvE") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
-          onAction // todo, initalize bot and assign drawBoard() to content
+          onAction = _ => {
+            board.is_bot = true
+            board.boardScene.content = drawBoard()
+          } // todo, initalize bot and assign drawBoard() to content {
         })
     }
     stackPane.children += box

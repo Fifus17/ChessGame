@@ -126,6 +126,19 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
       moveNo1
     }
   }
+
+  def move(): Unit = {
+    val move = best_move(1, depth)
+    if (move.isEmpty) {
+      if (board.is_check(1))
+        println("mat")
+      println("pat")
+      return 2
+    }
+    val m = move.get
+    board.move(m.piece, (m.x, m.y), m.promotion)
+    board.end_turn()
+  }
   def play_against_bot(bot:Bot): Int = {
           /*function for testing bot
           A bot vs bot game: returns COLOR of winner
