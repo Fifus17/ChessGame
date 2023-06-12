@@ -117,21 +117,21 @@ class Queen(var row:Int, var col: Int, val color:Int, val colorName:String) exte
   var name ='Q'
   var moves: List[(Int, Int)] = PieceVariables.queenMoves
 }
-object Bppl {
-  def main(args: Array[String]): Unit = {
-    val p:Pawn = new Pawn(3,3,0, "white")
-    val r:Rook = new Rook(3,3,0, "white")
-    val b:Bishop = new Bishop(3,3,0, "white")
-    val n:Knight = new Knight(3,3,0, "white")
-    val k:King = new King(3,3,0, "white")
-    val q:Queen = new Queen(3,3,0, "white")
-    val board = new Board(8,true,600,true)
-    board.setup()
-    println(board.get_available(p))
-    println(board.get_available(r))
-    println(b.moves)
-    println(n.moves)
-    println(k.moves)
-    println(q.moves)
-  }
-}
+//object Bppl {
+//  def main(args: Array[String]): Unit = {
+//    val p:Pawn = new Pawn(3,3,0, "white")
+//    val r:Rook = new Rook(3,3,0, "white")
+//    val b:Bishop = new Bishop(3,3,0, "white")
+//    val n:Knight = new Knight(3,3,0, "white")
+//    val k:King = new King(3,3,0, "white")
+//    val q:Queen = new Queen(3,3,0, "white")
+//    val board = new Board(8,true,600,true)
+//    board.setup()
+//    println(board.get_available(p))
+//    println(board.get_available(r))
+//    println(b.moves)
+//    println(n.moves)
+//    println(k.moves)
+//    println(q.moves)
+//  }
+//}

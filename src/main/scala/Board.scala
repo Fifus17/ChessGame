@@ -1,16 +1,20 @@
+import App.stage
+import scalafx.application.JFXApp.PrimaryStage
 import scalafx.application.Platform
 import scalafx.scene.Scene
 import scalafx.scene.layout.GridPane
 import scalafx.scene.paint.Color.LightGray
+import scalafx.stage.Stage
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 import scala.math.abs
-class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boolean) {
+import scala.util.control.Breaks.break
+class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boolean, var stage: PrimaryStage) {
   var grid: Array[Array[Option[Piece]]] = Array.ofDim[Option[Piece]](8, 8)
   var UI: BoardUI = new BoardUI(this)
-  var boardScene = new Scene(640, 640)
+  var boardScene = new Scene()
   var chosenX = -1
   var chosenY = -1
   var highlightedTiles: ArrayBuffer[Tuple2[Int, Int]] = ArrayBuffer.empty
@@ -88,6 +92,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
       }
     }
     boardScene.content = UI.mainMenu()
+    stage.scene = boardScene
     List(kingsBuffer(1),kingsBuffer(0))
   }
 
@@ -347,6 +352,8 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
       chosenY = -1
       pieceHighlighted = false
       highlightedTiles = ArrayBuffer.empty
+
+      // checkmates check
       if (is_checkmate(turn_color)) {
         println("checkmate: " + turn_color)
         boardScene.content = UI.finishView(turn_color)
@@ -355,6 +362,39 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
         val color = 1 - turn_color
         println("checkmate: " + color)
         boardScene.content = UI.finishView(1 - turn_color)
+      }
+
+      // promotion check
+
+      for (i <- 0 until 8) {
+
+        // white promotion check
+        if (grid(0)(i) match {
+          case Some(piece) =>
+            if (piece.colorName == "white" && piece.name == 'P') {
+              println("Promotion")
+              boardScene = new Scene(640, 800)
+              boardScene.content = UI.promotionUI(1, piece)
+              stage.scene = boardScene
+              end_turn()
+              true
+            } else false
+          case None => false
+        }) break
+
+        // black promotion check
+        if (grid(7)(i) match {
+          case Some(piece) =>
+            if (piece.colorName == "black" && piece.name == 'P') {
+              println("Promotion")
+              boardScene = new Scene(640, 800)
+              boardScene.content = UI.promotionUI(0, piece)
+              stage.scene = boardScene
+              end_turn()
+              true
+            } else false
+          case None => false
+        }) break
       }
       end_turn()
     }
@@ -405,13 +445,13 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, val is_bot: Boole
   }
   print("\n")
 }
-object Appl {
-  def main(args: Array[String]): Unit = {
-    val b = new Board(8,true,600,true)
-    b.setup()
-    b.show()
-    val p: Piece = b.grid(1)(1).get
-    b.move(p,(3,3),'X')
-    b.show()
-  }
-}
+//object Appl {
+//  def main(args: Array[String]): Unit = {
+//    val b = new Board(8,true,600,true)
+//    b.setup()
+//    b.show()
+//    val p: Piece = b.grid(1)(1).get
+//    b.move(p,(3,3),'X')
+//    b.show()
+//  }
+//}

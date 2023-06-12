@@ -4,7 +4,7 @@ import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.layout.GridPane.{getColumnIndex, getRowIndex}
-import scalafx.scene.layout.{Background, BackgroundImage, BackgroundPosition, BackgroundRepeat, BackgroundSize, GridPane, StackPane, VBox}
+import scalafx.scene.layout.{Background, BackgroundImage, BackgroundPosition, BackgroundRepeat, BackgroundSize, GridPane, HBox, StackPane, VBox}
 import scalafx.scene.paint.Color.LightGray
 import scalafx.scene.paint.{Color, Paint}
 import scalafx.scene.shape.Rectangle
@@ -43,7 +43,6 @@ class BoardUI(var board: Board) {
         minHeight = 80
         style = "-fx-background-color: transparent;"
         onAction = _ => {
-          println(y + " " + x)
           board.highlightTile(y, x)
           board.boardScene.content = board.UI.drawBoard()
         }
@@ -53,6 +52,79 @@ class BoardUI(var board: Board) {
       grid.add(stackPane, x, y)
     }
     grid
+  }
+
+  def promotionUI(color: Int, piece: Piece): VBox = {
+    val colorName: String = if (color == 1) "white" else "black"
+    var vbox: VBox = new VBox() {
+      children = Seq(
+        drawBoard(),
+        new HBox() {
+        children = Seq(
+          new StackPane() {
+            children = Seq(
+              new Button() {
+                minWidth = 160
+                minHeight = 160
+                style = "-fx-background-image: url('file:src/main/resources/" + colorName + "N.png'); -fx-background-size: cover; -fx-font: normal bold 20pt sans-serif;"
+                onAction = _ => {
+                  piece.promote('N')
+                  board.boardScene = new Scene()
+                  board.boardScene.content = drawBoard()
+                  board.stage.scene = board.boardScene
+                }
+              }
+            )
+          },
+          new StackPane() {
+            children = Seq(
+              new Button() {
+                minWidth = 160
+                minHeight = 160
+                style = "-fx-background-image: url('file:src/main/resources/" + colorName + "B.png'); -fx-background-size: cover; -fx-font: normal bold 20pt sans-serif;"
+                onAction = _ => {
+                  piece.promote('B')
+                  board.boardScene = new Scene()
+                  board.boardScene.content = drawBoard()
+                  board.stage.scene = board.boardScene
+                }
+              }
+            )
+          },
+          new StackPane() {
+            children = Seq(
+              new Button() {
+                minWidth = 160
+                minHeight = 160
+                style = "-fx-background-image: url('file:src/main/resources/" + colorName + "R.png'); -fx-background-size: cover; -fx-font: normal bold 20pt sans-serif;"
+                onAction = _ => {
+                  piece.promote('R')
+                  board.boardScene = new Scene()
+                  board.boardScene.content = drawBoard()
+                  board.stage.scene = board.boardScene
+                }
+              }
+            )
+          },
+          new StackPane() {
+            children = Seq(
+              new Button() {
+                minWidth = 160
+                minHeight = 160
+                style = "-fx-background-image: url('file:src/main/resources/" + colorName + "Q.png'); -fx-background-size: cover; -fx-font: normal bold 20pt sans-serif;"
+                onAction = _ => {
+                  piece.promote('Q')
+                  board.boardScene = new Scene()
+                  board.boardScene.content = drawBoard()
+                  board.stage.scene = board.boardScene
+                }
+              }
+            )
+          }
+        )
+      })
+    }
+    vbox
   }
 
   def mainMenu(): StackPane = {
@@ -75,7 +147,7 @@ class BoardUI(var board: Board) {
         },
         new Button("PvE") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
-          onAction // todo
+          onAction // todo, initalize bot and assign drawBoard() to content
         })
     }
     stackPane.children += box

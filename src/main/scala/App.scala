@@ -13,13 +13,14 @@ object App extends JFXApp {
     implicit val ec = ExecutionContext.global
 
 
-    val b = new Board(8, true, 600, true)
     stage = new PrimaryStage {
         title = "Chess Board"
-        scene = b.boardScene
+        scene = new Scene()
     }
 
-    // Test demo
+    val b = new Board(8, true, 600, true, stage)
+
+  // Test demo
     Future {
         // Simulate long running computation
         while (true) {
