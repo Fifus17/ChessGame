@@ -20,19 +20,5 @@ object App extends JFXApp {
 
     val b = new Board(8, true, 600, false, stage)
 
-  // Test demo
-    Future {
-        // Simulate long running computation
-        while (true) {
-//            Thread.sleep(3000)
-            val x = readInt()
-//            b.move(b.grid(x)(y).get, (xTo, yTo), 0)
-
-            // Update GUI
-            Platform.runLater {
-                b.boardScene.content = b.UI.drawBoard()
-            }
-        }
-    }
 
 }

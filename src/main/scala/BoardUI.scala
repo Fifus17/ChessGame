@@ -43,8 +43,11 @@ class BoardUI(var board: Board) {
         minHeight = 80
         style = "-fx-background-color: transparent;"
         onAction = _ => {
-          board.highlightTile(y, x)
-          board.boardScene.content = board.UI.drawBoard()
+          if (board.checkmate) board.boardScene.content = board.UI.finishView(board.turn_color)
+          else {
+            board.highlightTile(y, x)
+            board.boardScene.content = board.UI.drawBoard()
+          }
         }
       }
       stackPane.children += button
@@ -142,12 +145,15 @@ class BoardUI(var board: Board) {
         new Button("PvP") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
           onAction = _ => {
+            board.setup()
+            board.is_bot = false
             board.boardScene.content = drawBoard()
           }
         },
         new Button("PvE") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
           onAction = _ => {
+            board.setup()
             board.is_bot = true
             board.boardScene.content = drawBoard()
           } // todo, initalize bot and assign drawBoard() to content {
@@ -176,7 +182,8 @@ class BoardUI(var board: Board) {
         new Button("Back") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
           onAction = _ => {
-            board.boardScene.content = mainMenu()
+            board.setup()
+//            board.boardScene.content = mainMenu()
           }
         })
     }

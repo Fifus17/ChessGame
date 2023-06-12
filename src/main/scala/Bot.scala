@@ -137,6 +137,9 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     }
     val m = move.get
     board.move(m.piece, (m.x, m.y), m.promotion)
+    if (board.is_checkmate(0)) {
+      board.boardScene.content = board.UI.finishView(1)
+    }
     board.end_turn()
   }
   def play_against_bot(bot:Bot): Int = {

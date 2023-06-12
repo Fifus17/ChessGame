@@ -19,6 +19,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
   var chosenY = -1
   var highlightedTiles: ArrayBuffer[Tuple2[Int, Int]] = ArrayBuffer.empty
   var pieceHighlighted = false
+  var checkmate: Boolean = false
 
   for (i <- 0 until 8; j <- 0 until 8) {
     grid(i)(j) = None
@@ -48,6 +49,15 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
   }
 
   def setup(): List[King] = {
+//    println("setting up")
+//    // reseting board
+//    grid = Array.ofDim[Option[Piece]](8, 8)
+//    checkmate = false
+//    pieceHighlighted = false
+//    chosenX = -1
+//    chosenY = -1
+//    turn_color = 0
+
     val kingsBuffer = new ArrayBuffer[King]()
     for (row: Int <- List(0, size - 1)) {
       var color = 0
@@ -343,81 +353,6 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     true
   }
 
-//  def highlightTile(x: Int, y: Int): Unit = {
-//
-//      // move a piece
-//    if (pieceHighlighted && highlightedTiles.contains((x, y))) {
-//      move(grid(chosenX)(chosenY).get, (x, y), 0)
-//      chosenX = -1
-//      chosenY = -1
-//      pieceHighlighted = false
-//      highlightedTiles = ArrayBuffer.empty
-//
-//      // checkmates check
-//      if (is_checkmate(turn_color)) {
-//        println("checkmate: " + turn_color)
-//        boardScene.content = UI.finishView(turn_color)
-//      }
-//      if (is_checkmate(1 - turn_color)) {
-//        val color = 1 - turn_color
-//        println("checkmate: " + color)
-//        boardScene.content = UI.finishView(1 - turn_color)
-//      }
-//
-//      // promotion check
-//
-//      for (i <- 0 until 8) {
-//
-//        // white promotion check
-//        if (grid(0)(i) match {
-//          case Some(piece) =>
-//            if (piece.colorName == "white" && piece.name == 'P') {
-//              println("Promotion")
-//              boardScene = new Scene(640, 800)
-//              boardScene.content = UI.promotionUI(1, piece)
-//              stage.scene = boardScene
-//              end_turn()
-//              true
-//            } else false
-//          case None => false
-//        }) break
-//
-//        // black promotion check
-//        if (grid(7)(i) match {
-//          case Some(piece) =>
-//            if (piece.colorName == "black" && piece.name == 'P') {
-//              println("Promotion")
-//              boardScene = new Scene(640, 800)
-//              boardScene.content = UI.promotionUI(0, piece)
-//              stage.scene = boardScene
-//              end_turn()
-//              true
-//            } else false
-//          case None => false
-//        }) break
-//      }
-//      end_turn()
-//    }
-//    else {
-//      grid(x)(y) match {
-//        case Some(piece) =>
-//          if (piece.color == turn_color) {
-//            highlightedTiles = get_available(piece)
-//            pieceHighlighted = true
-//            chosenX = x
-//            chosenY = y
-//          }
-//
-//        case None =>
-//          highlightedTiles = ArrayBuffer.empty
-//          pieceHighlighted = false
-//          chosenX = -1
-//          chosenY = -1
-//      }
-//    }
-//
-//  }
-
   def highlightTile(x: Int, y: Int): Unit = {
 
     // move a piece
@@ -431,12 +366,14 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       // checkmates check
       if (is_checkmate(turn_color)) {
         println("checkmate: " + turn_color)
-        boardScene.content = UI.finishView(turn_color)
+        checkmate = true
+//        boardScene.content = UI.finishView(turn_color)
       }
       if (is_checkmate(1 - turn_color)) {
         val color = 1 - turn_color
         println("checkmate: " + color)
-        boardScene.content = UI.finishView(1 - turn_color)
+        checkmate = true
+//        boardScene.content = UI.finishView(1 - turn_color)
       }
 
       // promotion check
