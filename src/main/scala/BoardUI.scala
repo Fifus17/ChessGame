@@ -146,7 +146,7 @@ class BoardUI(var board: Board) {
         new Button("PvP") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
           onAction = _ => {
-            board.setup()
+//            board.setup()
             board.is_bot = false
             board.boardScene.content = drawBoard()
           }
@@ -154,7 +154,7 @@ class BoardUI(var board: Board) {
         new Button("PvE") {
           style = "-fx-font: normal bold 20pt sans-serif; -fx-pref-width: 200px; -fx-pref-height: 80px;"
           onAction = _ => {
-            board.setup()
+//            board.setup()
             board.is_bot = true
             board.boardScene.content = drawBoard()
           }
