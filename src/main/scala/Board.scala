@@ -187,12 +187,18 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           row = piece.row + move._1 * side
           col = piece.col + move._2 * side
           if (inbounds(row, col) && grid(row)(col).isDefined && grid(row)(col).get.color != piece.color)
-            available_pos.addOne((row, col))
+            if (grid(row)(col) match {
+              case Some(piece) => if (piece.name == 'K') false else true
+              case _ => true
+            }) available_pos.addOne((row, col))
         }
         row = piece.row + side
         col = piece.col
         if (inbounds(row, col) && grid(row)(col).isEmpty)
-          available_pos.addOne((row, col))
+          if (grid(row)(col) match {
+            case Some(piece) => if (piece.name == 'K') false else true
+            case _ => true
+          }) available_pos.addOne((row, col))
         val further_row = row + side//2 ruchy do przodu na starcie
         if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved)
           available_pos.addOne((further_row, col))
@@ -202,7 +208,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           row = piece.row + move._1 * side
           col = piece.col + move._2 * side
           if (inbounds(row, col) && !is_blocked((row, col), piece) && (grid(row)(col).isEmpty || grid(row)(col).get.color != piece.color))
-            available_pos.addOne((row, col))
+            if (grid(row)(col) match {
+              case Some(piece) => if (piece.name == 'K') false else true
+              case _ => true
+          }) available_pos.addOne((row, col))
         }
       }
       available_pos
