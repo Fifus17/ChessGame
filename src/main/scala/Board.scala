@@ -214,9 +214,52 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           }) available_pos.addOne((row, col))
         }
       }
+      if (piece.name == 'K') available_pos.addAll(check_castling())
       available_pos
     }
   }
+
+  def check_castling(): ArrayBuffer[(Int, Int)] = {
+    val arrayBuffer = new ArrayBuffer[(Int, Int)]()
+    if (turn_color == 0) {
+      if (grid(7)(4) match {
+        case Some(piece) =>
+          if (piece.name == 'K' && !piece.has_moved) true else false
+        case _ => false
+      }) {
+        if ((grid(7)(0) match {
+          case Some(piece) =>
+            if (piece.name == 'R' && !piece.has_moved) true else false
+          case _ => false
+        }) && grid(7)(1).isEmpty && grid(7)(2).isEmpty && grid(7)(3).isEmpty) arrayBuffer.addOne((7, 0))
+        if ((grid(7)(7) match {
+          case Some(piece) =>
+            if (piece.name == 'R' && !piece.has_moved) true else false
+          case _ => false
+        }) && grid(7)(6).isEmpty && grid(7)(5).isEmpty) arrayBuffer.addOne((7, 7))
+      }
+    }
+    else {
+      if (grid(0)(4) match {
+        case Some(piece) =>
+          if (piece.name == 'K' && !piece.has_moved) true else false
+        case _ => false
+      }) {
+        if ((grid(0)(0) match {
+          case Some(piece) =>
+            if (piece.name == 'R' && !piece.has_moved) true else false
+          case _ => false
+        }) && grid(0)(1).isEmpty && grid(0)(2).isEmpty && grid(0)(3).isEmpty) arrayBuffer.addOne((0, 0))
+        if ((grid(0)(7) match {
+          case Some(piece) =>
+            if (piece.name == 'R' && !piece.has_moved) true else false
+          case _ => false
+        }) && grid(0)(6).isEmpty && grid(0)(5).isEmpty) arrayBuffer.addOne((0, 7))
+      }
+    }
+    arrayBuffer
+  }
+
   def get_attacking(pos: (Int, Int), attacking_color: Int): ArrayBuffer[Piece] = {
     /*
     Returns set of all `attacking_color` pieces which attack square at pos `position`
@@ -253,7 +296,12 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     if (captured.isDefined && captured.get.color == 1 - piece.color) {
       capture(captured.get)
     }
-    grid(piece.row)(piece.col) = None
+    // checking for castling
+    if (piece.name == 'K' && piece.col == 4 && (new_position._2 == 0 || new_position._2 == 7)) {
+        grid(piece.row)(piece.col) = captured
+      captured.get.has_moved = true
+    }
+    else grid(piece.row)(piece.col) = None
     grid(new_position._1)(new_position._2) = Some(piece)
     piece.place(new_position)
     piece.has_moved = true
