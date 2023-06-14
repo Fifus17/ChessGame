@@ -190,7 +190,9 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
             if (grid(row)(col) match {
               case Some(piece) => if (piece.name == 'K') false else true
               case _ => true
-            }) available_pos.addOne((row, col))
+            }) {
+              if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
+            }
         }
         row = piece.row + side
         col = piece.col
@@ -198,12 +200,13 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           if (grid(row)(col) match {
             case Some(piece) => if (piece.name == 'K') false else true
             case _ => true
-          }) available_pos.addOne((row, col))
+          }) if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
         val further_row = row + side//2 ruchy do przodu na starcie
         if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved) {
-          available_pos.addOne((further_row, col))
+          if (does_result_with_no_check(piece, (further_row, col))) available_pos.addOne((further_row, col))
         }
-        available_pos.addAll(check_en_passant(piece.asInstanceOf[Pawn]))
+//        available_pos.addAll(check_en_passant(piece.asInstanceOf[Pawn]))
+        check_en_passant(piece.asInstanceOf[Pawn]).foreach(m => if (does_result_with_no_check(piece, m)) available_pos.addOne(m))
       }
       else {
         for (move <- moves) {
@@ -213,12 +216,29 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
             if (grid(row)(col) match {
               case Some(piece) => if (piece.name == 'K') false else true
               case _ => true
-          }) available_pos.addOne((row, col))
+          }) if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
         }
       }
-      if (piece.name == 'K') available_pos.addAll(check_castling())
+      if (piece.name == 'K') /* available_pos.addAll(check_castling()) */ check_castling().foreach(m => if (does_result_with_no_check(piece, m)) available_pos.addOne(m))
       available_pos
     }
+  }
+
+  def does_result_with_no_check(piece: Piece, new_position: (Int, Int)): Boolean = {
+    if (is_check(piece.color)) {
+      val old_pos = piece.pos
+      val first_move = !piece.has_moved
+      val captured = grid(new_position._1)(new_position._2)
+      move(piece, new_position, ' ')
+      if (is_check(piece.color)) {
+        revert_move(piece, captured, old_pos, false, first_move)
+        false
+      } else {
+        revert_move(piece, captured, old_pos, false, first_move)
+        true
+      }
+    }
+    else true
   }
 
   def check_en_passant(piece: Pawn): ArrayBuffer[(Int, Int)] = {
@@ -228,6 +248,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           case pawn: Pawn => if (pawn.justMovedTwoTiles) {
             if (turn_color == 0) arrayBuffer.addOne((piece.row-1, piece.col-1)) else arrayBuffer.addOne((piece.row+1, piece.col-1))
           }
+          case _ => None
         }
         case None => None
       }
@@ -236,6 +257,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
         case pawn: Pawn => if (pawn.justMovedTwoTiles) {
           if (turn_color == 0) arrayBuffer.addOne((piece.row - 1, piece.col + 1)) else arrayBuffer.addOne((piece.row + 1, piece.col + 1))
         }
+        case _ => None
       }
       case None => None
     }
@@ -325,20 +347,20 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     pieces.foreach(piece => if (piece.name == 'P') piece.asInstanceOf[Pawn].justMovedTwoTiles = false)
 
     // checking for en passant move
-    if (piece.name == 'P') {
-      if (Math.abs(piece.col - new_position._2) == 1 && (grid(new_position._1)(new_position._2) match {
-        case Some(piece) => false
-        case None => true
-      })) {
-        if (turn_color == 0) {
-          capture(grid(new_position._1+1)(new_position._2).get)
-          grid(new_position._1+1)(new_position._2) = None
-        } else {
-          capture(grid(new_position._1-1)(new_position._2).get)
-          grid(new_position._1-1)(new_position._2) = None
-        }
-      }
-    }
+//    if (piece.name == 'P') {
+//      if (Math.abs(piece.col - new_position._2) == 1 && (grid(new_position._1)(new_position._2) match {
+//        case Some(piece) => false
+//        case None => true
+//      })) {
+//        if (turn_color == 0) {
+//          capture(grid(new_position._1+1)(new_position._2).get)
+//          grid(new_position._1+1)(new_position._2) = None
+//        } else {
+//          capture(grid(new_position._1-1)(new_position._2).get)
+//          grid(new_position._1-1)(new_position._2) = None
+//        }
+//      }
+//    }
 
     // checking if pawn moved two squares (for en passant purposes)
     if (piece.name == 'P' && Math.abs(piece.row - new_position._1) == 2) {
@@ -386,7 +408,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     true
   }
 
-  def is_checkmate(color: Int): Boolean = {
+  def is_checkmate(color: Int, colorName: String): Boolean = {
 
     val king = kings(color)
     val attackers = get_attacking((king.row, king.col), 1 - king.color)
@@ -400,62 +422,80 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       return false
 
     //Check if the king can escape or capture the attacking piece
-    for (pos <- get_available(king)) {
-      val attack_pieces = new ArrayBuffer[Piece]()
-      for(attack_piece <- active(1 -color)){
-        val positions = new mutable.HashSet[(Int,Int)]()
-        var row =0
-        var col =0
-        for(move <- attack_piece.moves){
-          if(attack_piece.color == 1) {
-            row = attack_piece.row + move._1
-            col = attack_piece.col + move._2
-          }
-          else {
-            row = attack_piece.row - move._1
-            col = attack_piece.col - move._2
-          }
-          if((row,col) != attack_piece.pos)
-            positions.addOne((row,col))
-        }
-        var king_is_blocked = false
-        val path = get_path(attack_piece.pos, pos)
+//    for (pos <- get_available(king)) {
+//      val attack_pieces = new ArrayBuffer[Piece]()
+//      for(attack_piece <- active(1 -color)){
+//        val positions = new mutable.HashSet[(Int,Int)]()
+//        var row =0
+//        var col =0
+//        for(move <- attack_piece.moves){
+//          if(attack_piece.color == 1) {
+//            row = attack_piece.row + move._1
+//            col = attack_piece.col + move._2
+//          }
+//          else {
+//            row = attack_piece.row - move._1
+//            col = attack_piece.col - move._2
+//          }
+//          if((row,col) != attack_piece.pos)
+//            positions.addOne((row,col))
+//        }
+//        var king_is_blocked = false
+//        val path = get_path(attack_piece.pos, pos)
+//
+//        for ((r, c) <- path) {
+//          if(grid(r)(c).isDefined && grid(r)(c).get !=king)
+//            king_is_blocked = true
+//        }
+//        if(positions.contains(pos)  &&  !king_is_blocked)
+//          attack_pieces.append(attack_piece)
+//      }
+//      if(attack_pieces.isEmpty)
+//        return false
+//    }
 
-        for ((r, c) <- path) {
-          if(grid(r)(c).isDefined && grid(r)(c).get !=king)
-            king_is_blocked = true
-        }
-        if(positions.contains(pos)  &&  !king_is_blocked)
-          attack_pieces.append(attack_piece)
-      }
-      if(attack_pieces.isEmpty)
-        return false
-    }
-    //Check if any piece can block the attack
-    if (attackers.size == 1) {
-      val attacker = attackers(0)
-      val path = new mutable.HashSet[(Int,Int)]()
-      var r = 0
-      var c = 0
-      path.addAll(get_path((king.row, king.col), (attacker.row, attacker.col)))
-      for (defender <- active(king.color)) {
-        for (move <- get_available(defender)) {
-            r = move._1
-            c = move._2
-          if (path.contains(Tuple2(r, c)))
-            return false
-        }
-      }
-    }
+//    Check if any piece can block the attack
+//    if (attackers.size == 1) {
+//      val attacker = attackers(0)
+//      val path = new mutable.HashSet[(Int,Int)]()
+//      var r = 0
+//      var c = 0
+//      path.addAll(get_path((king.row, king.col), (attacker.row, attacker.col)))
+//      for (defender <- active(king.color)) {
+//        for (move <- get_available(defender)) {
+//            r = move._1
+//            c = move._2
+//          if (path.contains(Tuple2(r, c)))
+//            return false
+//        }
+//      }
+//    }
 
-    //Check if any piece can capture the attacking piece
-    if (attackers.size == 1) {
-      val attacker = attackers(0)
-      val defenders = new ArrayBuffer[Piece]()
-      defenders.addAll(get_attacking((attacker.row, attacker.col), king.color).diff(Seq(king)))
-      if (defenders.nonEmpty)
-        return false
-    }
+    println(color)
+    var pieces_to_check = active(color)
+//    println(pieces_to_check)
+//    println(active(1-color))
+//    if (colorName == "white") {pieces_to_check = active_white }
+//    else {pieces_to_check =  active_black}
+    var canBeDefended = false
+    pieces_to_check.foreach(p => {
+      if (get_available(p).nonEmpty) {
+        canBeDefended = true
+        println(p.name + " " + p.colorName + " current pos: " + p.pos)
+        get_available(p).foreach(m => println(m))
+        println("-------------------")
+      }
+    })
+    if (canBeDefended) return false
+
+    //Check if any piece can capture the attacking piece (upgraded get_available tackles that scenario)
+//    if (attackers.size == 1) {
+//      val attacker = attackers(0)
+//      val defenders = new ArrayBuffer[Piece]()
+//      defenders.addAll(get_attacking((attacker.row, attacker.col), king.color).diff(Seq(king)))
+//      if (defenders.nonEmpty)
+//        return false
+//    }
     true
   }
 
@@ -469,18 +509,20 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       pieceHighlighted = false
       highlightedTiles = ArrayBuffer.empty
 
-      // checkmates check
-      if (is_checkmate(turn_color)) {
-        println("checkmate: " + turn_color)
-        checkmate = true
-//        boardScene.content = UI.finishView(turn_color)
-      }
-      if (is_checkmate(1 - turn_color)) {
-        val color = 1 - turn_color
-        println("checkmate: " + color)
-        checkmate = true
-//        boardScene.content = UI.finishView(1 - turn_color)
-      }
+//       checkmates check
+//      if (is_checkmate(turn_color)) {
+//        println("checkmate: " + turn_color)
+//        checkmate = true
+////        boardScene.content = UI.finishView(turn_color)
+//      }
+//      var color = 1 - turn_color
+//      var colorname = if (color == 0) "white" else "black"
+//      println("checking " + colorname)
+//      if (is_checkmate(color, colorname)) {
+//        println("checkmate: " + color)
+//        checkmate = true
+////        boardScene.content = UI.finishView(1 - turn_color)
+//      }
 
       // promotion check
 
@@ -515,6 +557,14 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
         }) break
       }
       end_turn()
+      var color = turn_color
+      var colorname = if (color == 0) "white" else "black"
+      println("checking " + colorname)
+      if (is_checkmate(color, colorname)) {
+        println("checkmate: " + color)
+        checkmate = true
+        //        boardScene.content = UI.finishView(1 - turn_color)
+      }
       if (is_bot) bot.move()
     }
     else {

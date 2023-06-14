@@ -50,7 +50,8 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
   private def evaluate(color: Int): Double = {
     if(board.get_attacking(board.kings(color).pos,1-color).nonEmpty)
       return -5_000
-    if(board.is_checkmate(color))
+    val colorName = if (board.turn_color == 0) "white" else "black"
+    if(board.is_checkmate(color, colorName))
       return -50_000
     var side_0 = board.active(color).toList.map(pieceValueOf).sum
     var side_1 = board.active(1-color).toList.map(pieceValueOf).sum
@@ -137,7 +138,7 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     }
     val m = move.get
     board.move(m.piece, (m.x, m.y), m.promotion)
-    if (board.is_checkmate(0)) {
+    if (board.is_checkmate(0, "white")) {
       board.boardScene.content = board.UI.finishView(1)
     }
     board.end_turn()
@@ -150,7 +151,8 @@ class Bot(val board: Board, val depth: Int, val width: Int) {
     val bots: List[Bot] = List(this, bot)
     while(i < 200) {
         val color = board.turn_color
-        if (board.is_checkmate(color)) {
+        val colorName = if (board.turn_color == 0) "white" else "black"
+        if (board.is_checkmate(color, colorName)) {
           println("mat")
           return 1 - color
         }
