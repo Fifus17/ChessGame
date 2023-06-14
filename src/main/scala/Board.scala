@@ -191,7 +191,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
               case Some(piece) => if (piece.name == 'K') false else true
               case _ => true
             }) {
-              if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
+              if (does_result_with_no_check(piece, (row, col), ' ')) available_pos.addOne((row, col))
             }
         }
         row = piece.row + side
@@ -200,13 +200,13 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
           if (grid(row)(col) match {
             case Some(piece) => if (piece.name == 'K') false else true
             case _ => true
-          }) if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
+          }) if (does_result_with_no_check(piece, (row, col), ' ')) available_pos.addOne((row, col))
         val further_row = row + side//2 ruchy do przodu na starcie
         if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved) {
-          if (does_result_with_no_check(piece, (further_row, col))) available_pos.addOne((further_row, col))
+          if (does_result_with_no_check(piece, (further_row, col), ' ')) available_pos.addOne((further_row, col))
         }
 //        available_pos.addAll(check_en_passant(piece.asInstanceOf[Pawn]))
-        check_en_passant(piece.asInstanceOf[Pawn]).foreach(m => if (does_result_with_no_check(piece, m)) available_pos.addOne(m))
+        check_en_passant(piece.asInstanceOf[Pawn]).foreach(m => if (does_result_with_no_check(piece, m, 't')) available_pos.addOne(m))
       }
       else {
         for (move <- moves) {
@@ -216,20 +216,20 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
             if (grid(row)(col) match {
               case Some(piece) => if (piece.name == 'K') false else true
               case _ => true
-          }) if (does_result_with_no_check(piece, (row, col))) available_pos.addOne((row, col))
+          }) if (does_result_with_no_check(piece, (row, col), ' ')) available_pos.addOne((row, col))
         }
       }
-      if (piece.name == 'K') /* available_pos.addAll(check_castling()) */ check_castling().foreach(m => if (does_result_with_no_check(piece, m)) available_pos.addOne(m))
+      if (piece.name == 'K') /* available_pos.addAll(check_castling()) */ check_castling().foreach(m => if (does_result_with_no_check(piece, m, ' ')) available_pos.addOne(m))
       available_pos
     }
   }
 
-  def does_result_with_no_check(piece: Piece, new_position: (Int, Int)): Boolean = {
+  def does_result_with_no_check(piece: Piece, new_position: (Int, Int), promotion: Char): Boolean = {
     if (is_check(piece.color)) {
       val old_pos = piece.pos
       val first_move = !piece.has_moved
       val captured = grid(new_position._1)(new_position._2)
-      move(piece, new_position, ' ')
+      move(piece, new_position, promotion)
       if (is_check(piece.color)) {
         revert_move(piece, captured, old_pos, false, first_move)
         false
@@ -245,7 +245,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     val arrayBuffer = new ArrayBuffer[(Int, Int)]()
       if(piece.col != 0) grid(piece.row)(piece.col-1) match {
         case Some(p) => p match {
-          case pawn: Pawn => if (pawn.justMovedTwoTiles) {
+          case pawn: Pawn => if (pawn.justMovedTwoTiles && pawn.color != piece.color) {
             if (turn_color == 0) arrayBuffer.addOne((piece.row-1, piece.col-1)) else arrayBuffer.addOne((piece.row+1, piece.col-1))
           }
           case _ => None
@@ -254,7 +254,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       }
     if(piece.col != 7) grid(piece.row)(piece.col + 1) match {
       case Some(p) => p match {
-        case pawn: Pawn => if (pawn.justMovedTwoTiles) {
+        case pawn: Pawn => if (pawn.justMovedTwoTiles && pawn.color != piece.color) {
           if (turn_color == 0) arrayBuffer.addOne((piece.row - 1, piece.col + 1)) else arrayBuffer.addOne((piece.row + 1, piece.col + 1))
         }
         case _ => None
@@ -347,20 +347,22 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     pieces.foreach(piece => if (piece.name == 'P') piece.asInstanceOf[Pawn].justMovedTwoTiles = false)
 
     // checking for en passant move
-//    if (piece.name == 'P') {
-//      if (Math.abs(piece.col - new_position._2) == 1 && (grid(new_position._1)(new_position._2) match {
-//        case Some(piece) => false
-//        case None => true
-//      })) {
-//        if (turn_color == 0) {
-//          capture(grid(new_position._1+1)(new_position._2).get)
-//          grid(new_position._1+1)(new_position._2) = None
-//        } else {
-//          capture(grid(new_position._1-1)(new_position._2).get)
-//          grid(new_position._1-1)(new_position._2) = None
-//        }
-//      }
-//    }
+    if (piece.name == 'P') {
+      if (Math.abs(piece.col - new_position._2) == 1 && (grid(new_position._1)(new_position._2) match {
+        case Some(piece) => false
+        case None => true
+      })) {
+        if (promotion != 't') { // testing
+          if (turn_color == 0) {
+            capture(grid(new_position._1 + 1)(new_position._2).get)
+            grid(new_position._1 + 1)(new_position._2) = None
+          } else {
+            capture(grid(new_position._1 - 1)(new_position._2).get)
+            grid(new_position._1 - 1)(new_position._2) = None
+          }
+        }
+      }
+    }
 
     // checking if pawn moved two squares (for en passant purposes)
     if (piece.name == 'P' && Math.abs(piece.row - new_position._1) == 2) {
@@ -421,7 +423,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     if (attackers.isEmpty)
       return false
 
-    //Check if the king can escape or capture the attacking piece
+    //Check if the king can escape or capture the attacking piece (upgraded get_available tackles that scenario)
 //    for (pos <- get_available(king)) {
 //      val attack_pieces = new ArrayBuffer[Piece]()
 //      for(attack_piece <- active(1 -color)){
@@ -454,7 +456,7 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
 //        return false
 //    }
 
-//    Check if any piece can block the attack
+//    Check if any piece can block the attack (upgraded get_available tackles that scenario)
 //    if (attackers.size == 1) {
 //      val attacker = attackers(0)
 //      val path = new mutable.HashSet[(Int,Int)]()
@@ -471,19 +473,11 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
 //      }
 //    }
 
-    println(color)
     var pieces_to_check = active(color)
-//    println(pieces_to_check)
-//    println(active(1-color))
-//    if (colorName == "white") {pieces_to_check = active_white }
-//    else {pieces_to_check =  active_black}
     var canBeDefended = false
     pieces_to_check.foreach(p => {
       if (get_available(p).nonEmpty) {
         canBeDefended = true
-        println(p.name + " " + p.colorName + " current pos: " + p.pos)
-        get_available(p).foreach(m => println(m))
-        println("-------------------")
       }
     })
     if (canBeDefended) return false
@@ -508,21 +502,6 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       chosenY = -1
       pieceHighlighted = false
       highlightedTiles = ArrayBuffer.empty
-
-//       checkmates check
-//      if (is_checkmate(turn_color)) {
-//        println("checkmate: " + turn_color)
-//        checkmate = true
-////        boardScene.content = UI.finishView(turn_color)
-//      }
-//      var color = 1 - turn_color
-//      var colorname = if (color == 0) "white" else "black"
-//      println("checking " + colorname)
-//      if (is_checkmate(color, colorname)) {
-//        println("checkmate: " + color)
-//        checkmate = true
-////        boardScene.content = UI.finishView(1 - turn_color)
-//      }
 
       // promotion check
 
@@ -559,11 +538,8 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       end_turn()
       var color = turn_color
       var colorname = if (color == 0) "white" else "black"
-      println("checking " + colorname)
       if (is_checkmate(color, colorname)) {
-        println("checkmate: " + color)
         checkmate = true
-        //        boardScene.content = UI.finishView(1 - turn_color)
       }
       if (is_bot) bot.move()
     }
