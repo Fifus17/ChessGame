@@ -63,7 +63,7 @@ class Pawn(var row:Int, var col: Int, val color:Int, val colorName:String) exten
   var value = 1.0
   var name ='P'
   var moves: List[(Int, Int)] = PieceVariables.pawnMoves
-//  override val graphic: String = {match(color)} todo
+  var justMovedTwoTiles = false
   override def promote(new_name:Char): Unit ={
     new_name match{
       case 'Q' =>

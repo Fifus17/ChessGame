@@ -200,8 +200,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
             case _ => true
           }) available_pos.addOne((row, col))
         val further_row = row + side//2 ruchy do przodu na starcie
-        if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved)
+        if (inbounds(further_row, col) && grid(row)(col).isEmpty && grid(further_row)(col).isEmpty && !piece.has_moved) {
           available_pos.addOne((further_row, col))
+        }
+        available_pos.addAll(check_en_passant(piece.asInstanceOf[Pawn]))
       }
       else {
         for (move <- moves) {
@@ -217,6 +219,27 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
       if (piece.name == 'K') available_pos.addAll(check_castling())
       available_pos
     }
+  }
+
+  def check_en_passant(piece: Pawn): ArrayBuffer[(Int, Int)] = {
+    val arrayBuffer = new ArrayBuffer[(Int, Int)]()
+      if(piece.col != 0) grid(piece.row)(piece.col-1) match {
+        case Some(p) => p match {
+          case pawn: Pawn => if (pawn.justMovedTwoTiles) {
+            if (turn_color == 0) arrayBuffer.addOne((piece.row-1, piece.col-1)) else arrayBuffer.addOne((piece.row+1, piece.col-1))
+          }
+        }
+        case None => None
+      }
+    if(piece.col != 7) grid(piece.row)(piece.col + 1) match {
+      case Some(p) => p match {
+        case pawn: Pawn => if (pawn.justMovedTwoTiles) {
+          if (turn_color == 0) arrayBuffer.addOne((piece.row - 1, piece.col + 1)) else arrayBuffer.addOne((piece.row + 1, piece.col + 1))
+        }
+      }
+      case None => None
+    }
+    arrayBuffer
   }
 
   def check_castling(): ArrayBuffer[(Int, Int)] = {
@@ -296,6 +319,32 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
     if (captured.isDefined && captured.get.color == 1 - piece.color) {
       capture(captured.get)
     }
+
+    // clearing flag justMovedTwoTiles (en passant)
+    val pieces = if (turn_color == 0) active_white else active_black
+    pieces.foreach(piece => if (piece.name == 'P') piece.asInstanceOf[Pawn].justMovedTwoTiles = false)
+
+    // checking for en passant move
+    if (piece.name == 'P') {
+      if (Math.abs(piece.col - new_position._2) == 1 && (grid(new_position._1)(new_position._2) match {
+        case Some(piece) => false
+        case None => true
+      })) {
+        if (turn_color == 0) {
+          capture(grid(new_position._1+1)(new_position._2).get)
+          grid(new_position._1+1)(new_position._2) = None
+        } else {
+          capture(grid(new_position._1-1)(new_position._2).get)
+          grid(new_position._1-1)(new_position._2) = None
+        }
+      }
+    }
+
+    // checking if pawn moved two squares (for en passant purposes)
+    if (piece.name == 'P' && Math.abs(piece.row - new_position._1) == 2) {
+      piece.asInstanceOf[Pawn].justMovedTwoTiles = true
+    }
+
     // checking for castling
     if (piece.name == 'K' && piece.col == 4 && (new_position._2 == 0 || new_position._2 == 7)) {
         grid(piece.row)(piece.col) = captured
@@ -341,10 +390,10 @@ class Board(val size: Int, val is_pvp: Boolean, max_time: Int, var is_bot: Boole
 
     val king = kings(color)
     val attackers = get_attacking((king.row, king.col), 1 - king.color)
-    if(!active(color).contains(kings(color))) {
-      println("Check mate!")
-      return true
-    }
+//    if(!active(color).contains(kings(color))) {
+//      println("Check mate!")
+//      return true
+//    } zbijanie króla zostało zablokowane XD
 
     //Check if the king is attacked
     if (attackers.isEmpty)
